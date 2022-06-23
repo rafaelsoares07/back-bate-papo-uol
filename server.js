@@ -2,13 +2,15 @@ import express from "express";
 import cors from "cors"
 import dayjs from "dayjs";
 import { MongoClient } from "mongodb";
+import dotenv from "dotenv"
+dotenv.config()
 
 const app = express();
 app.use(express.json());
 app.use(cors())
 
 //conectando ao banco
-const mongoClient = new MongoClient("mongodb://localhost:27017");
+const mongoClient = new MongoClient(process.env.MONGO_URL_CONECTION);
 let db;
 
 mongoClient.connect().then(() => {
