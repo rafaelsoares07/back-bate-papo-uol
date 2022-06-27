@@ -34,20 +34,25 @@ const messageSchema = joi.object({
 })
 
 
-//FUNÇOES FORA DAS ROTAS DO EXPRESS 
+//FUNÇOES FORA DAS ROTAS DO EXPRESS
+
 setInterval(async()=>{
 	const participantes = await db.collection('users').find().toArray()
 	participantes.forEach(async (user) => {
+
+		const mensagemExit =  {
+			from:user.name,
+			to:'Todos',
+			text:'sai da sala...',
+			type:'status',
+			time:dayjs().locale("pt-br").format("HH:mm:ss")
+		}
+
+		console.log(user.name + '   user name')
+		console.log(Date.now()-user.lastStatus)
 		
-		if(Date.now()-user.lastStatus >1000){
+		if((Date.now() - user.lastStatus) > 12000){  
 			await db.collection('users').deleteOne({name: user.name})
-			 const mensagemExit = {
-				from:'xxx',
-				to:'Todos',
-				text:'sai da sala...',
-				type:'status',
-				time:dayjs().locale("pt-br").format("HH:mm:ss")
-			}
 			await db.collection('mensagens').insertOne(mensagemExit)
 		}
 	});
@@ -100,9 +105,7 @@ app.post("/participants", async(req, res) => {
 app.get("/participants", async(req, res)=>{
 
 	const {user}= req.headers
-	//console.log(user+'do get')
-
-
+	
 	try{
 
 		const usuarios = await db.collection("users").find().toArray()
@@ -152,12 +155,7 @@ app.get("/messages" , async(req, res)=>{
 	const limit = parseInt(req.query.limit);
 	const {user} = req.headers
 
-	//console.log(user+' USER SERVIDOR')
-
-	// flitar mensagens públicas, enviadas pelo user e recebidas só para o user 
 	const mensagens = await db.collection("mensagens").find({$or:[{type:'message'},{type:'status'},{from:user},{to:user}]}).toArray()
-	//console.log(mensagens.length)
-
 
 	if(mensagens.length>limit){
 		const mensagensLimite = mensagens.slice(-50)
@@ -170,27 +168,27 @@ app.get("/messages" , async(req, res)=>{
 
 
 app.post("/status", async(req, res)=>{
-	const {user} = req.headers
-	console.log(user) 
+	const {user} = await req.headers
+	//console.log(user) 
  	
 	const usuarioExiste = await db.collection('users').findOne({name:user})
 	
-	console.log(usuarioExiste +' usuario esxite')
-
-	
+	//console.log(usuarioExiste)
 
 	if(!usuarioExiste){
-		
+		//console.log('nao atualiza mais')
 		res.status(404).send('usuario não existe ')
+		return
 	}
 
 	await db.collection('users').updateOne({
 		name:usuarioExiste.name
 	},{
-		$set:{lastStatus:Date.now()}
+		$set:{lastStatus:Date.now()} 
 	})
 
-	
+	console.log('passou pela atualizacao')
+	res.status(200).send(usuarioExiste)
 })
 
 
